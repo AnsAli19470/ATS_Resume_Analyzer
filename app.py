@@ -21,15 +21,17 @@ def get_gemini_response(input_text, pdf_content, prompt):
     return response.text
 
 def input_pdf_setup(uploaded_file):
+    import fitz  # PyMuPDF
     if uploaded_file is not None:
-        pdf_reader = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        doc = fitz.open(stream=uploaded_file.read(), filetype="pdf")
         text = ""
-        for page in pdf_reader:
+        for page in doc:
             text += page.get_text()
-        pdf_reader.close()
-        return [{"type": "text", "text": {"content": text}}]
+        doc.close()
+        return [{"text": f"Resume Content:\n{text}"}]  # Gemini expects a simple dict with "text"
     else:
-        raise ValueError("No file uploaded or file is not a PDF.")
+        raise ValueError("No file uploaded.")
+
 st.set_page_config(page_title="ATS Resume Expert")
 st.header("ATS Resume System")
 input_texts=st.text_area("Job Description", key="input")
