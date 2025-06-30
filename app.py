@@ -7,6 +7,7 @@ from PIL import Image
 import pdf2image
 import google.generativeai as genai
 import base64
+import fitz
 
 # Load environment variables
 load_dotenv()
@@ -21,25 +22,12 @@ def get_gemini_response(input_text, pdf_content, prompt):
 
 def input_pdf_setup(uploaded_file):
     if uploaded_file is not None:
-        images = pdf2image.convert_from_bytes(uploaded_file.read())
-        first_page = images[0]
-        img_byte_arr = io.BytesIO()
-        first_page.save(img_byte_arr, format='JPEG')
-        img_byte_arr = img_byte_arr.getvalue()
-
-        pdf_parts = [
-            {
-                "mime_type": "image/jpeg",  # Fixed typo from "mimi_type"
-                "data": base64.b64encode(img_byte_arr).decode()
-            },
-            {
-                "type": "text",
-                "text": {
-                    "content": "This is the first page of the PDF document."
-                }
-            }
-        ]
-        return pdf_parts
+        pdf_reader = fitz.open(stream=uploaded_file.read(), filetype="pdf")
+        text = ""
+        for page in pdf_reader:
+            text += page.get_text()
+        pdf_reader.close()
+        return [{"type": "text", "text": {"content": text}}]
     else:
         raise ValueError("No file uploaded or file is not a PDF.")
 st.set_page_config(page_title="ATS Resume Expert")
